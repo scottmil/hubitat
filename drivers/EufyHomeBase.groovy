@@ -1,20 +1,24 @@
-/*
+/*  Eufy HomeBase
+ *  Version 1.1
+ *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
  *  10/19/2021  scottmil  Adapted from ioBroker code developed by eibyer
+ *  10/23/2021  scottmil  Added debug preference, removed redundant code for checking required preferences
  *
- "states": {
-      "0": "Away",
-      "1": "Home",
-      "2": "Schedule",
-      "3": "Custom 1",
-      "4": "Custom 2",
-      "5": "Custom 3",
-      "47": "Geofencing",
-      "63": "Disarmed"
+ *    states:
+ *    "0": "Away",
+ *    "1": "Home",
+ *    "2": "Schedule",
+ *    "3": "Custom 1",
+ *    "4": "Custom 2",
+ *    "5": "Custom 3",
+ *    "47": "Geofencing",
+ *    "63": "Disarmed"
  */
+
 metadata {
 	definition (name: "Eufy Homebase", namespace: "scottmil", author: "scottmil") {
 		capability "Switch"
@@ -33,18 +37,53 @@ metadata {
         command "geofencing"
         command "disarmed"
 
-		  attribute "mode", "string"
-		  attribute "lastUpdate", "string"
+		attribute "mode", "string"
+		attribute "lastUpdate", "string"
 	}
    
     preferences {
 	    section ("Settings") {
             input name: "deviceIP", type:"text", title:"ioBroker IP Address", required: true
             input name: "devicePort", type:"text", title:"ioBroker Port", required: true
-            input name: "deviceSerialNumber", type: "text", title: "Eufy Homebase Serial Number", required: true      
+            input name: "deviceSerialNumber", type: "text", title: "Eufy Homebase Serial Number", required: true 
+            input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
         }
 	}
 
+}
+
+def logsOff() {
+    log.warn "debug logging disabled..."
+    device.updateSetting("logEnable", [value: "false", type: "bool"])
+}
+
+
+def installed() {
+	log.info "Installed with settings: ${settings}"
+}
+
+def uninstalled() {
+	if (logEnable)log.debug "Uninstalled"
+}
+
+def updated() {
+	log.info "Updated with settings: ${settings}"
+    log.warn "debug logging is: ${logEnable == true}"
+    if (logEnable) runIn(1800, logsOff)
+
+	initialize()
+}
+
+def initialize() {
+    device.deviceNetworkId = "$deviceSerialNumber" 
+    // Do the initial poll
+	poll()
+	// Schedule it to run every 5 minutes
+	runEvery5Minutes("poll")
+}
+
+def refresh() {
+	poll()
 }
 
 private getApiPath() { 
@@ -55,49 +94,9 @@ private setApiPath() {
 	"/set/eufy-security.0." 
 }
 
-def installed() {
-	log.debug "Installed with settings: ${settings}"
-}
-
-def uninstalled() {
-	log.debug "uninstalled()"
-}
-
-def updated() {
-	log.debug "Updated with settings: ${settings}"
-
-	initialize()
-}
-
-def initialize() {
-	
-    // Do the initial poll
-	poll()
-	// Schedule it to run every minute
-	runEvery5Minutes("poll")
-
-}
-def refresh() {
-	poll()
-}
-
 def poll() {
-
-	if (deviceIP == null) {
-    	log.debug "ioBroker IP address missing in preferences"
-        return
-    }
-    if (devicePort == null) {
-    	log.debug "ioBroker Port missing in preferences"
-        return
-    }
-    if (deviceSerialNumber == null) {
-    	log.debug "HomeBase SN missing in preferences"
-        return
-    }
     
     def path = getApiPath() + deviceSerialNumber + ".station.guard_mode"
-    device.deviceNetworkId = "$deviceSerialNumber" 
   	def hostAddress = "$deviceIP:$devicePort"
     def headers = [:] 
     headers.put("HOST", hostAddress)
@@ -114,9 +113,9 @@ def poll() {
 
 def parse(response) {
 	
-   log.debug "Parsing '${response}'"
+   if (logEnable)log.debug "Parsing '${response}'"
    def json = response.json
-	log.debug "Received '${json}'"
+   if (logEnable)log.debug "Received '${json}'"
 	switch (json.val) {
       case 0:
     	   sendEvent(name: "mode", value: "away")
@@ -202,28 +201,13 @@ def disarmed() {
 
 
 def doSwitch(mode) {
-	
-    if (deviceIP == null) {
-    	log.debug "ioBroker IP address missing in preferences"
-        return
-    }
-    if (deviceIP == null) {
-        log.debug "ioBroker Port missing in preferences"
-        return
-    }
-    if (deviceSerialNumber == null) {
-        log.debug "HomeBase SN missing in preferences"
-        return
-    }
    
- 	def path = setApiPath() + deviceSerialNumber + ".station.guard_mode?value=" + mode + "&ack=false"
-
-    device.deviceNetworkId = "$deviceSerialNumber" 
+ 	def path = setApiPath() + deviceSerialNumber + ".station.guard_mode?value=" + mode + "&ack=false" 
   	def hostAddress = "$deviceIP:$devicePort"
     def headers = [:] 
     headers.put("HOST", hostAddress)
 
-    log.debug path
+    if (logEnable)log.debug path
     
     def hubAction = new hubitat.device.HubAction(
         method: "GET",
@@ -239,7 +223,7 @@ def lastUpdated(time) {
 	def timeNow = now()
 	def lastUpdate = ""
 	if(location.timeZone == null) {
-    	log.debug "Cannot set update time : location not defined in app"
+    	log.warn "Cannot set update time : location not defined in app"
     }
     else {
    		lastUpdate = new Date(timeNow).format("MMM dd yyyy HH:mm", location.timeZone)

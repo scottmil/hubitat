@@ -1,12 +1,13 @@
 /*  Eufy HomeBase Camera
- *  Version 1.1
+ *  Version 1.1.1
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  10/19/2021  scottmil  Adapted from ioBroker code developed by eibyer
- *  10/23/2021  scottmil  Added debug logging preference, removed redundant code for required preferences
+ *  10/19/2021  1.0   scottmil  Adapted from ioBroker code developed by eibyer
+ *  10/23/2021  1.1   scottmil  Added debug logging preference, removed redundant code for required preferences
+ *  02/06/2022  1.1.1 scottmil  Added test for null JSON response, refreshing if no response received
  *
  */
  
@@ -15,7 +16,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
         
-        command "poll"
+        //command "poll"
         command "refresh"
         
         // HomeBase commands
@@ -119,29 +120,37 @@ def parse(response) {
 	
    if (logEnable)log.debug "Parsing '${response}'"
    def json = response.json
-   if (logEnable)log.debug "Received '${json}'"
+    if(json) {
+       if (logEnable)log.debug "Received '${json}'"
     
-    if (json.toString().contains("$deviceCameraSerialNumber" + ".motion_detection")) {
-        sendEvent(name: 'motionDetection', value: "${json.val}")
-	} else if (json.toString().contains("$deviceCameraSerialNumber" + ".battery")) {
-	   sendEvent(name: 'battery', value: "$json.val")
-	} else if  (json.toString().contains("$deviceCameraSerialNumber" + ".audio_recording")) {
-	   sendEvent(name: 'audioRecording', value: "$json.val") 
-	} else if (json.toString().contains("$deviceCameraSerialNumber" + ".status_led")) {
-	   sendEvent(name: 'statusLed', value: "$json.val") 
-	} else if (json.toString().contains("$deviceCameraSerialNumber" + ".enabled")) {
-	    if ("$json.val".equalsIgnoreCase("true")) {
+       if (json.toString().contains("$deviceCameraSerialNumber" + ".motion_detection")) {
+          sendEvent(name: 'motionDetection', value: "${json.val}")
+	   } else if (json.toString().contains("$deviceCameraSerialNumber" + ".battery")) {
+	      sendEvent(name: 'battery', value: "$json.val")
+	   } else if  (json.toString().contains("$deviceCameraSerialNumber" + ".audio_recording")) {
+	      sendEvent(name: 'audioRecording', value: "$json.val") 
+	   } else if (json.toString().contains("$deviceCameraSerialNumber" + ".status_led")) {
+	      sendEvent(name: 'statusLed', value: "$json.val") 
+	   } else if (json.toString().contains("$deviceCameraSerialNumber" + ".enabled")) {
+	      if ("$json.val".equalsIgnoreCase("true")) {
 	        sendEvent(name: 'switch', value: "on")
-	    } else {
+	      } else {
 	        sendEvent(name: 'switch', value: "off") 
-	    }
-	 } else {
+	      }
+	   } else {
 	     log.warn "Unknown JSON response" 
-	 }
-     
-     sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
-     
-    if (logEnable)log.debug "Exiting parse(response)"
+	   }
+       sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
+    
+    } else {
+       log.warn "No JSON response received, refreshing..."
+       //Arbitrary delay
+       def count = 1
+       while(count <= 50) {
+          count++
+       }
+       refresh()
+   }   
 }
 
 // on defaults to enabled state
@@ -210,3 +219,4 @@ def lastUpdated(time) {
     }
     return lastUpdate
 }
+

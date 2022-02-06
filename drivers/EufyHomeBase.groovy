@@ -1,14 +1,15 @@
 /*  Eufy HomeBase
- *  Version 1.2.1
+ *  Version 1.2.2
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  10/19/2021  scottmil  1.0 Adapted from ioBroker code developed by eibyer
- *  10/23/2021  scottmil  1.1 Added debug preference, removed redundant code for checking required preferences
- *  02/05/2022  scottmil  1.2 Changed "schedule" to "scheduled" to avoid naming conflict with Hubitat
+ *  10/19/2021  scottmil  1.0   Adapted from ioBroker code developed by eibyer
+ *  10/23/2021  scottmil  1.1   Added debug preference, removed redundant code for checking required preferences
+ *  02/05/2022  scottmil  1.2   Changed "schedule" to "scheduled" to avoid naming conflict with Hubitat
  *  02/05/2022  scottmil  1.2.1 Handled json.val parsing error 
+ *  02/06/2022  scottmil  1.2.2 Added refresh() if initial parse callback yields no response
  *
  *    states:
  *    "0": "Away",
@@ -119,7 +120,7 @@ def parse(response) {
    def json = response.json
    if (json) {
       if (logEnable)log.debug "Received '${json}'"
-      switch (json.val) {
+	  switch (json.val) {
          case 0:
     	      sendEvent(name: "mode", value: "away")
               sendEvent(name: "switch", value: "on")
@@ -155,12 +156,16 @@ def parse(response) {
          default:
               log.warn "Unknown JSON response"
         }
+        sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
    } else {
-       if (logEnable)log.debug "No JSON response received"
-   }
-    
-   sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
-   
+       log.warn "No JSON response received, refreshing..."
+       //Arbitrary delay
+       def count = 1
+       while(count <= 50) {
+          count++
+       }
+       refresh()
+   }   
 }
 
 // on defaults to home mode

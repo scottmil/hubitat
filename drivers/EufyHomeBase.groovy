@@ -1,13 +1,14 @@
 /*  Eufy HomeBase
- *  Version 1.2
+ *  Version 1.2.1
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  10/19/2021  scottmil  Adapted from ioBroker code developed by eibyer
- *  10/23/2021  scottmil  Added debug preference, removed redundant code for checking required preferences
- *  02/05/2022  scottmil  Changed "schedule" to "scheduled" to avoid naming conflict with Hubitat
+ *  10/19/2021  scottmil  1.0 Adapted from ioBroker code developed by eibyer
+ *  10/23/2021  scottmil  1.1 Added debug preference, removed redundant code for checking required preferences
+ *  02/05/2022  scottmil  1.2 Changed "schedule" to "scheduled" to avoid naming conflict with Hubitat
+ *  02/05/2022  scottmil  1.2.1 Handled json.val parsing error 
  *
  *    states:
  *    "0": "Away",
@@ -116,45 +117,49 @@ def parse(response) {
 	
    if (logEnable)log.debug "Parsing '${response}'"
    def json = response.json
-   if (logEnable)log.debug "Received '${json}'"
-	switch (json.val) {
-      case 0:
-    	   sendEvent(name: "mode", value: "away")
-           sendEvent(name: "switch", value: "on")
-           break
-    	case 1:
-    	   sendEvent(name: "mode", value: "home")
-           sendEvent(name: "switch", value: "on")
-           break
-    	case 2:
-    	   sendEvent(name: "mode", value: "scheduled")
-           sendEvent(name: "switch", value: "on")
-           break
-    	case 3:
-    	   sendEvent(name: "mode", value: "custom1")
-           sendEvent(name: "switch", value: "on")
-           break
-    	case 4:
-    	   sendEvent(name: "mode", value: "custom2")
-           sendEvent(name: "switch", value: "on")
-           break
-        case 5:
-    	   sendEvent(name: "mode", value: "custom3")
-           sendEvent(name: "switch", value: "on")
-           break
-        case 47:
-    	   sendEvent(name: "mode", value: "geofencing")
-           sendEvent(name: "switch", value: "on")
-           break
-        case 63:
-           sendEvent(name: "mode", value: "disarmed")
-           sendEvent(name: "switch", value: "off")
-           break
-        default:
-           log.warn "Unknown JSON response"
-    }
+   if (json) {
+      if (logEnable)log.debug "Received '${json}'"
+      switch (json.val) {
+         case 0:
+    	      sendEvent(name: "mode", value: "away")
+              sendEvent(name: "switch", value: "on")
+              break
+    	 case 1:
+    	      sendEvent(name: "mode", value: "home")
+              sendEvent(name: "switch", value: "on")
+              break
+    	 case 2:
+    	      sendEvent(name: "mode", value: "scheduled")
+              sendEvent(name: "switch", value: "on")
+              break
+    	 case 3:
+    	      sendEvent(name: "mode", value: "custom1")
+              sendEvent(name: "switch", value: "on")
+              break
+    	 case 4:
+    	      sendEvent(name: "mode", value: "custom2")
+              sendEvent(name: "switch", value: "on")
+              break
+         case 5:
+    	      sendEvent(name: "mode", value: "custom3")
+              sendEvent(name: "switch", value: "on")
+              break
+         case 47:
+    	      sendEvent(name: "mode", value: "geofencing")
+              sendEvent(name: "switch", value: "on")
+              break
+         case 63:
+              sendEvent(name: "mode", value: "disarmed")
+              sendEvent(name: "switch", value: "off")
+              break
+         default:
+              log.warn "Unknown JSON response"
+        }
+   } else {
+       if (logEnable)log.debug "No JSON response received"
+   }
     
-    sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
+   sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
    
 }
 

@@ -1,5 +1,5 @@
 /*  Eufy HomeBase
- *  Version 1.1
+ *  Version 1.2
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -7,6 +7,7 @@
  *
  *  10/19/2021  scottmil  Adapted from ioBroker code developed by eibyer
  *  10/23/2021  scottmil  Added debug preference, removed redundant code for checking required preferences
+ *  02/05/2022  scottmil  Changed "schedule" to "scheduled" to avoid naming conflict with Hubitat
  *
  *    states:
  *    "0": "Away",
@@ -24,13 +25,13 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
         
-        command "poll"
+        //command "poll"
         command "refresh"
         
         // HomeBase commands
         command "away"
         command "home"
-        command "schedule"
+        command "scheduled"
         command "custom1"
         command "custom2"
         command "custom3"
@@ -126,7 +127,7 @@ def parse(response) {
            sendEvent(name: "switch", value: "on")
            break
     	case 2:
-    	   sendEvent(name: "mode", value: "schedule")
+    	   sendEvent(name: "mode", value: "scheduled")
            sendEvent(name: "switch", value: "on")
            break
     	case 3:
@@ -175,7 +176,7 @@ def home() {
    doSwitch(1)
 }
 
-def schedule() {
+def scheduled() {
    doSwitch(2)
 }
 
@@ -202,7 +203,7 @@ def disarmed() {
 
 def doSwitch(mode) {
    
- 	def path = setApiPath() + deviceSerialNumber + ".station.guard_mode?value=" + mode + "&ack=false" 
+ 	def path = setApiPath() + deviceSerialNumber + ".station.guard_mode?value=" + mode + "&prettyPrint&ack=false"
   	def hostAddress = "$deviceIP:$devicePort"
     def headers = [:] 
     headers.put("HOST", hostAddress)
@@ -217,6 +218,7 @@ def doSwitch(mode) {
         [callback : parse] 
     )
     sendHubCommand(hubAction)
+    
 }
 
 def lastUpdated(time) {

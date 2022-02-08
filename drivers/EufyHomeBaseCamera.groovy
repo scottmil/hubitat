@@ -8,6 +8,8 @@
  *  10/19/2021  1.0   scottmil  Adapted from ioBroker code developed by eibyer
  *  10/23/2021  1.1   scottmil  Added debug logging preference, removed redundant code for required preferences
  *  02/06/2022  1.1.1 scottmil  Added test for null JSON response, refreshing if no response received
+ *  02/06/2022  1.1.2 scottmil  Added default port
+ *  02/08/2022  1.1.3 scottmil  Added MotionSensor capability
  *
  */
  
@@ -15,8 +17,9 @@ metadata {
 	definition (name: "Eufy HomeBase Camera", namespace: "scottmil", author: "scottmil") {
 		capability "Switch"
 		capability "Refresh"
+        capability "Sensor"
+        capability "MotionSensor"
         
-        //command "poll"
         command "refresh"
         
         // HomeBase commands
@@ -27,7 +30,7 @@ metadata {
         command "enableLed"
         command "disableLed"
        
-        attribute "motionDetection", "string"
+        attribute "motion", "string"
 		attribute "audioRecording", "string"
 		attribute "statusLed", "string"
 		attribute "battery", "string"
@@ -37,7 +40,7 @@ metadata {
     preferences {
 	    section ("Settings") {
             input name: "deviceIP", type:"text", title:"ioBroker IP Address", required: true
-            input name: "devicePort", type:"text", title:"ioBroker Port", required: true
+            input name: "devicePort", type:"text", title:"ioBroker Port", required: true, defaultValue: "8087"
             input name: "deviceHomeBaseSerialNumber", type: "text", title: "Eufy HomeBase Serial Number", required: true
             input name: "deviceCameraSerialNumber", type: "text", title: "Eufy Camera Serial Number", required: true 
             input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
@@ -124,7 +127,12 @@ def parse(response) {
        if (logEnable)log.debug "Received '${json}'"
     
        if (json.toString().contains("$deviceCameraSerialNumber" + ".motion_detection")) {
-          sendEvent(name: 'motionDetection', value: "${json.val}")
+           def isMotionDetection = "${json.val}"
+           if (isMotionDetection.equalsIgnoreCase("true")) {
+               sendEvent(name: 'motion', value: "active")
+           } else {
+               sendEvent(name: 'motion', value: "inactive")
+           }   
 	   } else if (json.toString().contains("$deviceCameraSerialNumber" + ".battery")) {
 	      sendEvent(name: 'battery', value: "$json.val")
 	   } else if  (json.toString().contains("$deviceCameraSerialNumber" + ".audio_recording")) {
@@ -219,4 +227,3 @@ def lastUpdated(time) {
     }
     return lastUpdate
 }
-

@@ -1,5 +1,5 @@
 /*  Eufy HomeBase
- *  Version 1.2.2
+ *  Version 2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -10,6 +10,8 @@
  *  02/05/2022  scottmil  1.2   Changed "schedule" to "scheduled" to avoid naming conflict with Hubitat
  *  02/05/2022  scottmil  1.2.1 Handled json.val parsing error 
  *  02/06/2022  scottmil  1.2.2 Added refresh() if initial parse callback yields no response
+ *  02/06/2022  scottmil  1.2.3 Added attribute switch and default port
+ *  02/09/2022  scottmil  2.0   Added ability to configure ioBroker.euSec instance  See: https://github.com/bropat/ioBroker.eusec
  *
  *    states:
  *    "0": "Away",
@@ -41,13 +43,15 @@ metadata {
         command "disarmed"
 
 		attribute "mode", "string"
+        attribute "switch", "string"
 		attribute "lastUpdate", "string"
 	}
    
     preferences {
 	    section ("Settings") {
             input name: "deviceIP", type:"text", title:"ioBroker IP Address", required: true
-            input name: "devicePort", type:"text", title:"ioBroker Port", required: true
+            input name: "devicePort", type:"text", title:"ioBroker Port", required: true, defaultValue: "8087"
+            input name: "euSecInstance", type:"text", title:"ioBroker.euSec Instance", required: true, defaultValue: "eusec.0"
             input name: "deviceSerialNumber", type: "text", title: "Eufy Homebase Serial Number", required: true 
             input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
         }
@@ -90,11 +94,11 @@ def refresh() {
 }
 
 private getApiPath() { 
-	"/get/eufy-security.0." 
+	"/get/" + "$euSecInstance" + "."
 }
 
 private setApiPath() { 
-	"/set/eufy-security.0." 
+	"/set/" + "$euSecInstance" + "."
 }
 
 def poll() {
@@ -213,8 +217,8 @@ def disarmed() {
 
 def doSwitch(mode) {
    
- 	def path = setApiPath() + deviceSerialNumber + ".station.guard_mode?value=" + mode + "&prettyPrint&ack=false"
-  	def hostAddress = "$deviceIP:$devicePort"
+    def path = setApiPath() + deviceSerialNumber + ".station.guard_mode?value=" + mode + "&prettyPrint&ack=false"
+    def hostAddress = "$deviceIP:$devicePort"
     def headers = [:] 
     headers.put("HOST", hostAddress)
 

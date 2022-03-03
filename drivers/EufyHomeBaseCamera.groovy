@@ -1,5 +1,5 @@
 /*  Eufy HomeBase Camera
- *  Version 2.0
+ *  Version 2.1
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -11,14 +11,15 @@
  *  02/06/2022  1.1.2 scottmil  Added default port
  *  02/08/2022  1.1.3 scottmil  Added MotionSensor capability
  *  02/09/2022  2.0   scottmil  Added ability to configure ioBroker.euSec instance  See: https://github.com/bropat/ioBroker.eusec
+ *  03/02/2022  2.1   scottmil  Removed Motion Sensor capablity as ioBroker and Hubitat MakerAPI required to notify when motion is detected
  */
  
 metadata {
 	definition (name: "Eufy HomeBase Camera", namespace: "scottmil", author: "scottmil") {
-		capability "Switch"
-		capability "Refresh"
+	capability "Switch"
+	capability "Refresh"
         capability "Sensor"
-        capability "MotionSensor"
+       
         
         command "refresh"
         
@@ -31,9 +32,9 @@ metadata {
         command "disableLed"
        
         attribute "motion", "string"
-		attribute "audioRecording", "string"
-		attribute "statusLed", "string"
-		attribute "battery", "string"
+	attribute "audioRecording", "string"
+	attribute "statusLed", "string"
+	attribute "battery", "string"
         attribute "lastUpdate", "string"
 	}
    
@@ -46,7 +47,7 @@ metadata {
             input name: "deviceCameraSerialNumber", type: "text", title: "Eufy Camera Serial Number", required: true 
             input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
         }
-	}
+    }
 
 }
 
@@ -56,15 +57,15 @@ def logsOff() {
 }
 
 def installed() {
-	log.info "Installed with settings: ${settings}"
+    log.info "Installed with settings: ${settings}"
 }
 
 def uninstalled() {
-	if (logEnable) log.debug "Uninstalled"
+    if (logEnable) log.debug "Uninstalled"
 }
 
 def updated() {
-	log.info "Updated with settings: ${settings}"
+    log.info "Updated with settings: ${settings}"
     log.warn "debug logging is: ${logEnable == true}"
     if (logEnable) runIn(1800, logsOff)
 
@@ -128,12 +129,7 @@ def parse(response) {
        if (logEnable)log.debug "Received '${json}'"
     
        if (json.toString().contains("$deviceCameraSerialNumber" + ".motion_detection")) {
-           def isMotionDetection = "${json.val}"
-           if (isMotionDetection.equalsIgnoreCase("true")) {
-               sendEvent(name: 'motion', value: "active")
-           } else {
-               sendEvent(name: 'motion', value: "inactive")
-           }   
+           sendEvent(name: 'motion', value: "$json.val")  
 	   } else if (json.toString().contains("$deviceCameraSerialNumber" + ".battery")) {
 	      sendEvent(name: 'battery', value: "$json.val")
 	   } else if  (json.toString().contains("$deviceCameraSerialNumber" + ".audio_recording")) {
@@ -228,4 +224,6 @@ def lastUpdated(time) {
     }
     return lastUpdate
 }
+
+
 

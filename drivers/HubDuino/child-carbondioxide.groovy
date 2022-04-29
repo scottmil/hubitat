@@ -28,15 +28,15 @@ metadata {
         importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/child-carbondioxide.groovy",
         author: "Scott Miller"
     ) {
-		capability "CarbonDioxideMeasurement"
-		capability "Sensor"
+	capability "CarbonDioxideMeasurement"
+	capability "Sensor"
         
-    attribute "lastUpdated", "string"
+        attribute "lastUpdated", "string"
 	}
 	
 	preferences {
-			input "carbonDioxideOffset", "number", title: "Carbon Dioxide Offset", description: "Adjust carbon dioxide level by this many PPM", range: "*..*", displayDuringSetup: false
-      input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
+		input "carbonDioxideOffset", "number", title: "Carbon Dioxide Offset", description: "Adjust carbon dioxide level by this many PPM", range: "*..*", displayDuringSetup: false
+           	input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
 	}
   
 }

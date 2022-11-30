@@ -1,5 +1,5 @@
 /*  Eufy HomeBase
- *  Version 2.0
+ *  Version 2.1
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -12,6 +12,7 @@
  *  02/06/2022  scottmil  1.2.2 Added refresh() if initial parse callback yields no response
  *  02/06/2022  scottmil  1.2.3 Added attribute switch and default port
  *  02/09/2022  scottmil  2.0   Added ability to configure ioBroker.euSec instance  See: https://github.com/bropat/ioBroker.eusec
+ *  06/22/2022  scottmil  2.1   Updated when debug logging occurs
  *
  *    states:
  *    "0": "Away",
@@ -42,10 +43,10 @@ metadata {
         command "geofencing"
         command "disarmed"
 
-		attribute "mode", "string"
+	attribute "mode", "string"
         attribute "switch", "string"
-		attribute "lastUpdate", "string"
-	}
+	attribute "lastUpdate", "string"
+    }
    
     preferences {
 	    section ("Settings") {
@@ -55,7 +56,7 @@ metadata {
             input name: "deviceSerialNumber", type: "text", title: "Eufy Homebase Serial Number", required: true 
             input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
         }
-	}
+    }
 
 }
 
@@ -74,19 +75,19 @@ def uninstalled() {
 }
 
 def updated() {
-	log.info "Updated with settings: ${settings}"
+    log.info "Updated with settings: ${settings}"
     log.warn "debug logging is: ${logEnable == true}"
     if (logEnable) runIn(1800, logsOff)
 
-	initialize()
+    initialize()
 }
 
 def initialize() {
     device.deviceNetworkId = "$deviceSerialNumber" 
     // Do the initial poll
-	poll()
-	// Schedule it to run every 5 minutes
-	runEvery5Minutes("poll")
+    poll()
+    // Schedule it to run every 5 minutes
+    runEvery5Minutes("poll")
 }
 
 def refresh() {
@@ -104,7 +105,7 @@ private setApiPath() {
 def poll() {
     
     def path = getApiPath() + deviceSerialNumber + ".station.guard_mode"
-  	def hostAddress = "$deviceIP:$devicePort"
+    def hostAddress = "$deviceIP:$devicePort"
     def headers = [:] 
     headers.put("HOST", hostAddress)
 
@@ -124,7 +125,7 @@ def parse(response) {
    def json = response.json
    if (json) {
       if (logEnable)log.debug "Received '${json}'"
-	  switch (json.val) {
+      switch (json.val) {
          case 0:
     	      sendEvent(name: "mode", value: "away")
               sendEvent(name: "switch", value: "on")
@@ -162,7 +163,7 @@ def parse(response) {
         }
         sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
    } else {
-       log.warn "No JSON response received, refreshing..."
+       log.debug "No JSON response received, refreshing..."
        //Arbitrary delay
        def count = 1
        while(count <= 50) {
@@ -174,12 +175,12 @@ def parse(response) {
 
 // on defaults to home mode
 def on() {
-	doSwitch(1)
+   doSwitch(1)
 }
 
 // off defaults to disarmed mode
 def off() {
-	doSwitch(63)
+   doSwitch(63)
 }
 
 def away() {
@@ -242,7 +243,7 @@ def lastUpdated(time) {
     	log.warn "Cannot set update time : location not defined in app"
     }
     else {
-   		lastUpdate = new Date(timeNow).format("MMM dd yyyy HH:mm", location.timeZone)
+   	lastUpdate = new Date(timeNow).format("MMM dd yyyy HH:mm", location.timeZone)
     }
     return lastUpdate
 }

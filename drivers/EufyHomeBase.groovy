@@ -13,6 +13,7 @@
  *  02/06/2022  scottmil  1.2.3 Added attribute switch and default port
  *  02/09/2022  scottmil  2.0   Added ability to configure ioBroker.euSec instance  See: https://github.com/bropat/ioBroker.eusec
  *  06/22/2022  scottmil  2.1   Updated when debug logging occurs
+ *  12/02/2022  scottmil  2.1.1 Fixed minor parse() bug where debug msg "No JSON response received..." logged when debug off
  *
  *    states:
  *    "0": "Away",
@@ -163,7 +164,7 @@ def parse(response) {
         }
         sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
    } else {
-       log.debug "No JSON response received, refreshing..."
+       if (logEnable) log.debug "No JSON response received, refreshing..."
        //Arbitrary delay
        def count = 1
        while(count <= 50) {

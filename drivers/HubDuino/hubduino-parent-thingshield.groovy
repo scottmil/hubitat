@@ -1,7 +1,7 @@
 /**
  *  HubDuino_Parent_ThingShield.groovy
  *
- *  https://raw.githubusercontent.com/DanielOgorchock/ST_Anything/master/HubDuino/Drivers/hubduino-parent-thingshield.groovy
+ *  https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/hubduino-parent-thingshield.groovy
  *
  *  Copyright 2017 Dan G Ogorchock 
  *
@@ -42,20 +42,21 @@
  *    2019-09-01  Dan Ogorchock  Added Presence Capability to know if the HubDuino device is online or offline
  *    2019-09-04  Dan Ogorchock  Automatically detect maximum number of buttons and set numberOfButtons attribute accordingly
  *    2019-10-30  Dan Ogorchock  Added Child Valve
- *    2022-04-29  Scott Miller   Added Carbon Dioxide Measurement, TVOC, Sound Sensor, Air Quality child drivers
+ *    2020-02-08  Dan Ogorchock  Added refresh() call to initialize() command
+ *    2020-06-09  Dan Ogorchock  Improved HubDuino board 'Presence' logic
+ *    2020-06-25  Dan Ogorchock  Added Window Shade
+ *    2020-09-19  Dan Ogorchock  Added "Releasable Button" Capability (requires new Arduino IS_Button.cpp and .h code)
+ *    2022-02-08  Dan Ogorchock  Added support for new custom "weight measurement" child device
+ *    2023-03-18  Scott Miller   Added Carbon Dioxide Measurement, TVOC, Sound Sensor, Air Quality child drivers
  *	
  */
  
 metadata {
-	definition (
-        name: "HubDuino Parent Thingshield",
-        namespace: "scottmil",
-        author: "Dan Ogorchock",
-        importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/hubduino-parent-thingshield.groovy"
-    ) {
+	definition (name: "HubDuino Parent Thingshield", namespace: "ogiewon", author: "Dan Ogorchock", importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/hubduino-parent-thingshield.groovy") {
         capability "Refresh"
         capability "Pushable Button"
         capability "Holdable Button"
+        capability "Releasable Button"
         capability "Presence Sensor"  //used to determine is the HubDuino microcontroller is still reporting data or not
        
         command "sendData", ["string"]
@@ -64,12 +65,9 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0138", inClusters: "0000"
 	}
 
-    simulator {
-    }
-
     // Preferences
 	preferences {
-        input "timeOut", "number", title: "Timeout in Seconds", description: "Max time w/o HubDuino update before setting device to 'not present'", defaultValue: "900", required: true, displayDuringSetup:true
+        input "timeOut", "number", title: "Timeout in Seconds", description: "Max time w/o HubDuino update before setting presence to 'not present'", defaultValue: "900", range: "600..*",required: true, displayDuringSetup:true
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
 	}
 }
@@ -111,14 +109,8 @@ def parse(String description) {
             sendEvent(name: "presence", value: "present", isStateChange: true, descriptionText: "New update received from HubDuino device")
         }
         
-        if (timeOut != null) {
-            runIn(timeOut, timeOutHubDuino)
-        } else {
-            if (logEnable) log.info "Using 900 second default timeout.  Please set the timeout setting appropriately and then click save."
-            runIn(900, timeOutHubDuino)
-            //log.debug "updating timeOut value to default of 900"
-            //device.updateSetting("timeOut", [value: "900", type: "number"])
-        }
+        //Keep track of when the last update came in from the Arduino board
+        state.parseLastRanAt = now()      
         
 		if (name.startsWith("button")) {
             if (logEnable) log.debug "In parse:  name = ${name}, value = ${value}, btnNum = " + namenum
@@ -253,10 +245,18 @@ def uninstalled() {
 
 def initialize() {
 	log.info "Executing 'initialize()'"
+
+    //Schedule Presence Check Routine
+    runEvery5Minutes("checkHubDuinoPresence")
+    
+    //Have the Arduino send an updated value for every device attached.
+    refresh()
 }
 
 def updated() {
     log.info "Executing 'updated()'"
+    
+    unschedule()
     
     if (logEnable) {
         log.info "Enabling Debug Logging for 30 minutes" 
@@ -265,12 +265,11 @@ def updated() {
         unschedule(logsoff)
     }
     
-    //Schedule inactivity timeout
-    log.info "Device inactivity timer started for ${timeOutHubDuino} seconds"
-    runIn(timeOut, timeOutHubDuino)
+    //Schedule Presence Check Routine
+    runEvery5Minutes("checkHubDuinoPresence")
     
     //Have the Arduino send an updated value for every device attached.  This will auto-created child devices!
-    log.info "Sending REFRESH command to Arduino, which wilol create any missing child devices."
+    log.info "Sending REFRESH command to Arduino, which will create any missing child devices."
     refresh()
 }
 
@@ -359,19 +358,25 @@ private void createChildDevice(String deviceName, String deviceNumber) {
                 	break        
          		case "valve": 
                 		deviceHandlerName = "Child Valve" 
+                	break        
+         		case "windowShade": 
+                		deviceHandlerName = "Child Window Shade" 
+                	break        
+         		case "weight": 
+                		deviceHandlerName = "Child Weight Measurement" 
                 	break
-                case "carbonDioxide": 
-                		deviceHandlerName = "Child Carbon Dioxide Measurement" 
-                	break
-                case "airQuality": 
-                		deviceHandlerName = "Child Air Quality Sensor" 
-                	break
-                case "tvoc": 
-                		deviceHandlerName = "Child TVOC Measurement" 
-                	break
-                case "sound":
-                        deviceHandlerName = "Child Sound Sensor" 
-                	break
+                        case "carbonDioxide": 
+             		        deviceHandlerName = "Child Carbon Dioxide Measurement" 
+             	        break
+                        case "airQuality": 
+             		        deviceHandlerName = "Child Air Quality Sensor" 
+             	        break
+                        case "tvoc": 
+             		        deviceHandlerName = "Child TVOC Measurement" 
+             	        break
+                        case "sound":
+                               deviceHandlerName = "Child Sound Sensor" 
+             	        break
 			default: 
                 		log.error "No Child Device Handler case for ${deviceName}"
       		}
@@ -404,7 +409,21 @@ def deleteAllChildDevices() {
        }
 }
 
-def timeOutHubDuino() {
-    //If the timeout expires before being reset, mark this Parent Device as 'not present' to allow action to be taken
-    sendEvent(name: "presence", value: "not present", isStateChange: true, descriptionText: "No update received from HubDuino device in past ${timeOut} seconds")
+def checkHubDuinoPresence() {
+    def tmr = 900
+    
+    if (timeOut != null) {
+        if (timeOut >= 600) {
+            tmr = timeOut.toInteger()
+        } else {
+            tmr = 600
+        }
+    }
+   
+    if (now() >= state.parseLastRanAt + (tmr * 1000)) {
+        //If the timeout exceeds the threshold, mark this Parent Device as 'not present' to allow action to be taken
+        if (device.currentValue("presence") != "not present") {
+            sendEvent(name: "presence", value: "not present", isStateChange: true, descriptionText: "No update received from HubDuino device in past ${timeOut} seconds")
+        }
+    }
 }

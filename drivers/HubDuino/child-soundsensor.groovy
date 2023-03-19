@@ -1,8 +1,6 @@
 /**
  *  Child Sound Sensor
  *
- *  https://raw.githubusercontent.com/DanielOgorchock/ST_Anything/master/HubDuino/Drivers/child-sound-sensor.groovy
- *
  *  Copyright 2017 Daniel Ogorchock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -24,24 +22,25 @@
  *    2018-09-22  Dan Ogorchock  Added preference for debug logging
  *    2019-07-01  Dan Ogorchock  Added importUrl
  *    2022-04-20  Scott Miller   Modified for Sound Sensor
+ *    2022-05-08  Scott Miller   Added descriptionText logging
+ *    2023-03-19  Scott Miller   Removed custom attribute "lastUpdated" and set namespace to "ogiewon" so parent will function properly.
  *
  * 
  */
  metadata {
 	definition (
         name: "Child Sound Sensor",
-        namespace: "scottmil",
+        namespace: "ogiewon",
         importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/child-soundsensor.groovy",
         author: "Scott Miller"
     ) {
 		capability "SoundSensor"
 		capability "Sensor"
-
-		attribute "lastUpdated", "string"
 	}
 
     preferences {
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
+        input name: "txtEnable", type: "bool", title: "Enable descriptionText logging", defaultValue: true
 	}
 
 }
@@ -59,12 +58,11 @@ def parse(String description) {
     def value = parts.length>1?parts[1].trim():null
     if (name && value) {    
     	// Update device
-        if (value != "detected") { value = "not detected"};
+        if (value != "detected") {value = "not detected"};  
+        if (txtEnable && value == "detected"){
+           log.info "${device.displayName} ${name} is ${value}."
+        }
         sendEvent(name: name, value: value)
-        // Update lastUpdated date and time
-        def nowDay = new Date().format("MMM dd", location.timeZone)
-        def nowTime = new Date().format("h:mm a", location.timeZone)
-        sendEvent(name: "lastUpdated", value: nowDay + " at " + nowTime, displayed: false)
     }
     else {
     	log.error "Missing either name or value.  Cannot parse!"

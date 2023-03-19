@@ -19,24 +19,23 @@
  *    2018-07-01  Dan Ogorchock  Original Creation 
  *    2021-04-13  Scott Miller   Adapted for Carbon Dioxide Measurement
  *    2022-04-29  Scott Miller   Removed SmartThings tiles metadata
+ *    2023-03-18  Scott Miller   Removed custom attribute "lastUpdated" and restored "ogiewon" namespace
  * 
  */
 metadata {
 	definition (
         name: "Child Carbon Dioxide Measurement",
-        namespace: "scottmil",
+        namespace: "ogiewon",
         importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/child-carbondioxide.groovy",
         author: "Scott Miller"
     ) {
-	capability "CarbonDioxideMeasurement"
-	capability "Sensor"
-        
-        attribute "lastUpdated", "string"
+		capability "CarbonDioxideMeasurement"
+		capability "Sensor"
 	}
 	
 	preferences {
-		input "carbonDioxideOffset", "number", title: "Carbon Dioxide Offset", description: "Adjust carbon dioxide level by this many PPM", range: "*..*", displayDuringSetup: false
-           	input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
+			input "carbonDioxideOffset", "number", title: "Carbon Dioxide Offset", description: "Adjust carbon dioxide level by this many PPM", range: "*..*", displayDuringSetup: false
+            input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
 	}
   
 }
@@ -55,12 +54,9 @@ def parse(String description) {
         }       
         
         // Update device
-        sendEvent(name: name, value: tmpValue, unit:"ppm")
-        // Update lastUpdated date and time
-        def nowDay = new Date().format("MMM dd", location.timeZone)
-        def nowTime = new Date().format("h:mm a", location.timeZone)
-        sendEvent(name: "lastUpdated", value: nowDay + " at " + nowTime, displayed: false)
+        sendEvent(name: name, value: tmpValue, unit:"ppm")       
     }
+        
     else {
     	log.error "Missing either name or value.  Cannot parse!"
     }

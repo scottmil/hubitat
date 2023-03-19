@@ -1,5 +1,5 @@
 /**
- *  Child TVOC Measurement ST
+ *  Child TVOC Measurement
  *
  *  Copyright 2018 Daniel Ogorchock
  *
@@ -19,12 +19,13 @@
  *    2018-07-01  Dan Ogorchock  Original Creation 
  *    2021-05-09  Scott Miller   Adapted for TVOC Measurement
  *    2022-04-29  Scott Miller   Removed SmartThings tiles metadata
+ *    2023-03-18  Scott Miller   Removed custom attribute "lastUpdated" and restored "ogiewon" namespace
  * 
  */
 metadata {
 	definition (
         name: "Child TVOC Measurement",
-        namespace: "scottmil",
+        namespace: "ogiewon",
         importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/child-tvoc.groovy",
         author: "Scott Miller"
     ) {
@@ -32,7 +33,6 @@ metadata {
 		capability "Sensor"
         
         attribute "tvoc", "string"
-        attribute "lastUpdated", "string"
         
 	}
 	
@@ -50,10 +50,6 @@ def parse(String description) {
     if (name && value) {
         // Update device
         sendEvent(name: name, value: value, unit:" ")
-        // Update lastUpdated date and time
-        def nowDay = new Date().format("MMM dd", location.timeZone)
-        def nowTime = new Date().format("h:mm a", location.timeZone)
-        sendEvent(name: "lastUpdated", value: nowDay + " at " + nowTime, displayed: false)
     }
     else {
     	log.error "Missing either name or value.  Cannot parse!"
@@ -66,6 +62,4 @@ def installed() {
 
 def updated() {
     if (logEnable) runIn(1800, parse,logsOff)
-    //runEvery1Minute(parse)		// Generally test it every minute.
-    //runIn(2, parse)				// But test it once, right after we install or update it too.
 }

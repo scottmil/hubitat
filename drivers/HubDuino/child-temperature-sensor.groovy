@@ -26,7 +26,8 @@
  *    2019-03-06  Dan Ogorchock  Improved rounding
  *    2019-07-01  Dan Ogorchock  Added importUrl
  *    2019-10-30  Dan Ogorchock  Fixed type conversion error found by @kuzenkohome
- *    2023-03-19  Scott Miller         Removed custom attribute "lastUpdated" and ST tiles definitions
+ *    2023-03-19  Scott Miller   Removed custom attribute "lastUpdated" and ST tiles definitions
+ *    2023-03-22  Scott Miller   Removed simulator method and modified logsOff unscheduling
  * 
  */
 metadata {
@@ -35,9 +36,6 @@ metadata {
 		capability "Sensor"
 	}
 
-	simulator {
-
-	}
     
 	preferences {
 		section("Prefs") {
@@ -50,7 +48,7 @@ metadata {
 }
 
 def logsOff(){
-    log.warn "debug logging disabled..."
+    log.warn "Debug logging disabled..."
     device.updateSetting("logEnable",[value:"false",type:"bool"])
 }
 
@@ -95,5 +93,10 @@ def installed() {
 }
 
 def updated() {
-    if (logEnable) runIn(1800,logsOff)
+    if (logEnable) {
+        log.info "Enabling debug logging for 30 minutes" 
+        runIn(1800,logsOff)
+    } else {
+        unschedule(logsOff)
+    }
 }

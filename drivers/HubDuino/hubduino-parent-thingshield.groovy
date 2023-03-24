@@ -48,6 +48,7 @@
  *    2020-09-19  Dan Ogorchock  Added "Releasable Button" Capability (requires new Arduino IS_Button.cpp and .h code)
  *    2022-02-08  Dan Ogorchock  Added support for new custom "weight measurement" child device
  *    2023-03-18  Scott Miller   Added Carbon Dioxide Measurement, TVOC, Sound Sensor, Air Quality child drivers
+ *    2023-03-22  Scott Miller   Fixed typo in unschedule(logsOff)
  *	
  */
  
@@ -73,7 +74,7 @@ metadata {
 }
 
 def logsOff(){
-    log.warn "debug logging disabled..."
+    log.warn "Debug logging disabled..."
     device.updateSetting("logEnable",[value:"false",type:"bool"])
 }
 
@@ -259,10 +260,10 @@ def updated() {
     unschedule()
     
     if (logEnable) {
-        log.info "Enabling Debug Logging for 30 minutes" 
+        log.info "Enabling debug Logging for 30 minutes" 
         runIn(1800,logsOff)
     } else {
-        unschedule(logsoff)
+        unschedule(logsOff)
     }
     
     //Schedule Presence Check Routine
@@ -365,18 +366,18 @@ private void createChildDevice(String deviceName, String deviceNumber) {
          		case "weight": 
                 		deviceHandlerName = "Child Weight Measurement" 
                 	break
-                        case "carbonDioxide": 
-             		        deviceHandlerName = "Child Carbon Dioxide Measurement" 
-             	        break
-                        case "airQuality": 
-             		        deviceHandlerName = "Child Air Quality Sensor" 
-             	        break
-                        case "tvoc": 
-             		        deviceHandlerName = "Child TVOC Measurement" 
-             	        break
-                        case "sound":
-                               deviceHandlerName = "Child Sound Sensor" 
-             	        break
+                case "carbonDioxide": 
+             		    deviceHandlerName = "Child Carbon Dioxide Measurement" 
+             	    break
+                case "airQuality": 
+             		    deviceHandlerName = "Child Air Quality Sensor" 
+             	    break
+                case "tvoc": 
+             		    deviceHandlerName = "Child TVOC Measurement" 
+             	    break
+                case "sound":
+                        deviceHandlerName = "Child Sound Sensor" 
+             	    break
 			default: 
                 		log.error "No Child Device Handler case for ${deviceName}"
       		}

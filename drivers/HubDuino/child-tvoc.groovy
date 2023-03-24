@@ -20,6 +20,7 @@
  *    2021-05-09  Scott Miller   Adapted for TVOC Measurement
  *    2022-04-29  Scott Miller   Removed SmartThings tiles metadata
  *    2023-03-18  Scott Miller   Removed custom attribute "lastUpdated" and restored "ogiewon" namespace
+ *    2023-03-22  Scott Miller   Modified logsOff unscheduling
  * 
  */
 metadata {
@@ -42,6 +43,11 @@ metadata {
         
 }
 
+def logsOff(){
+    log.warn "Debug logging disabled..."
+    device.updateSetting("logEnable",[value:"false",type:"bool"])
+}
+
 def parse(String description) {
     if (logEnable) log.debug "parse(${description}) called"
 	def parts = description.split(" ")
@@ -61,5 +67,10 @@ def installed() {
 }
 
 def updated() {
-    if (logEnable) runIn(1800, parse,logsOff)
+    if (logEnable) {
+        log.info "Enabling debug logging for 30 minutes" 
+        runIn(1800,logsOff)
+    } else {
+        unschedule(logsOff)
+    }
 }

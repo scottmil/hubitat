@@ -24,6 +24,7 @@
  *    2022-04-20  Scott Miller   Modified for Sound Sensor
  *    2022-05-08  Scott Miller   Added descriptionText logging
  *    2023-03-19  Scott Miller   Removed custom attribute "lastUpdated" and set namespace to "ogiewon" so parent will function properly.
+ *    2023-03-22  Scott Miller   Modified logsOff unscheduling
  *
  * 
  */
@@ -46,7 +47,7 @@
 }
 
 def logsOff(){
-    log.warn "debug logging disabled..."
+    log.warn "Debug logging disabled..."
     device.updateSetting("logEnable",[value:"false",type:"bool"])
 }
 
@@ -74,5 +75,10 @@ def installed() {
 }
 
 def updated() {
-    if (logEnable) runIn(1800,logsOff)
+    if (logEnable) {
+        log.info "Enabling debug logging for 30 minutes" 
+        runIn(1800,logsOff)
+    } else {
+        unschedule(logsOff)
+    }
 }

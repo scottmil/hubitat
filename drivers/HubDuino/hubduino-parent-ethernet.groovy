@@ -1,7 +1,7 @@
 /**
  *  HubDuino_Parent_Ethernet.groovy
  *
- *  https://raw.githubusercontent.com/DanielOgorchock/ST_Anything/master/HubDuino/Drivers/hubduino-parent-ethernet.groovy
+ *  https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/hubduino-parent-ethernet.groovy
  *
  *  Copyright 2017 Dan G Ogorchock 
  *
@@ -50,12 +50,17 @@
  *    2020-06-25  Dan Ogorchock  Added Window Shade
  *    2020-09-19  Dan Ogorchock  Added "Releasable Button" Capability (requires new Arduino IS_Button.cpp and .h code)
  *    2022-02-08  Dan Ogorchock  Added support for new custom "weight measurement" child device
- *    2023-03-18  Scott Miller         Added Carbon Dioxide Measurement, TVOC, Sound Sensor, Air Quality child drivers
+ *    2023-03-18  Scott Miller   Added Carbon Dioxide Measurement, TVOC, Sound Sensor, Air Quality child drivers
+ *    2023-03-22  Scott Miller   Fixed unschedule(logsOff) typo
  *	
  */
  
 metadata {
-	definition (name: "HubDuino Parent Ethernet", namespace: "ogiewon", author: "Dan Ogorchock", importUrl: "https://raw.githubusercontent.com/DanielOgorchock/ST_Anything/master/HubDuino/Drivers/hubduino-parent-ethernet.groovy") {
+	definition (name: "HubDuino Parent Ethernet",
+                namespace: "ogiewon",
+                author: "Dan Ogorchock",
+                importUrl: "https://github.com/scottmil/hubitat/tree/main/drivers/HubDuino/hubduino-parent-ethernet.groovy") {
+        
         capability "Refresh"
         capability "Pushable Button"
         capability "Holdable Button"
@@ -77,7 +82,7 @@ metadata {
 }
 
 def logsOff(){
-    log.warn "debug logging disabled..."
+    log.warn "Debug logging disabled..."
     device.updateSetting("logEnable",[value:"false",type:"bool"])
 }
 
@@ -267,10 +272,10 @@ def updated() {
     unschedule()
     
     if (logEnable) {
-        log.info "Enabling Debug Logging for 30 minutes" 
+        log.info "Enabling debug logging for 30 minutes" 
         runIn(1800,logsOff)
     } else {
-        unschedule(logsoff)
+        unschedule(logsOff)
     }
     
     //Schedule Presence Check Routine
@@ -373,18 +378,18 @@ private void createChildDevice(String deviceName, String deviceNumber) {
          		case "weight": 
                 		deviceHandlerName = "Child Weight Measurement" 
                 	break   
-                        case "carbonDioxide": 
-             		       deviceHandlerName = "Child Carbon Dioxide Measurement" 
-             	        break
-                        case "airQuality": 
-             		       deviceHandlerName = "Child Air Quality Sensor" 
-             	        break
-                        case "tvoc": 
-             		       deviceHandlerName = "Child TVOC Measurement" 
-             	        break
-                        case "sound":
-                               deviceHandlerName = "Child Sound Sensor" 
-             	        break     
+                case "carbonDioxide": 
+             		   deviceHandlerName = "Child Carbon Dioxide Measurement" 
+             	   break
+                case "airQuality": 
+             		   deviceHandlerName = "Child Air Quality Sensor" 
+             	   break
+                case "tvoc": 
+             		   deviceHandlerName = "Child TVOC Measurement" 
+             	   break
+                case "sound":
+                     deviceHandlerName = "Child Sound Sensor" 
+             	   break     
 			default: 
                 	log.error "No Child Device Handler case for ${deviceName}"
       		}

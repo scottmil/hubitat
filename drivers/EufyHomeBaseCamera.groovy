@@ -1,5 +1,5 @@
 /*  Eufy HomeBase Camera
- *  Version 2.1
+ *  Version 2.3
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -12,6 +12,8 @@
  *  02/08/2022  1.1.3 scottmil  Added MotionSensor capability
  *  02/09/2022  2.0   scottmil  Added ability to configure ioBroker.euSec instance  See: https://github.com/bropat/ioBroker.eusec
  *  03/02/2022  2.1   scottmil  Removed Motion Sensor capablity as ioBroker and Hubitat MakerAPI required to notify when motion is detected
+ *  06/22/2022  2.2   scottmil  Updated when debug logging occurs
+ *  11/17/2023  2.3   scottmil  Added Battery capability so battery level can be monitored by Hubitat apps
  */
  
 metadata {
@@ -19,6 +21,7 @@ metadata {
 	capability "Switch"
 	capability "Refresh"
         capability "Sensor"
+        capability "Battery"
        
         
         command "refresh"

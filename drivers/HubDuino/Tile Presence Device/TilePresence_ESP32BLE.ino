@@ -31,9 +31,9 @@ int scanTime = 5; //In seconds
 BLEScan* pBLEScan;  
        
 /* Include MAC_ADDRESS of the 2 Tiles to search for */
-//std::string TILE_MAC_ADDRESS_1 = "c1:62:85:c0:84:5d";  //  Scott's billfold Tile Mac address
-std::string TILE_MAC_ADDRESS_1 = "f7:1f:88:6a:2d:ec";  //  Scott's single house key Tile MAC address
-std::string TILE_MAC_ADDRESS_2 = "c3:4f:e9:0c:11:32";  //  Barb's house keys Tile MAC address
+//std::string TILE_MAC_ADDRESS_1 = "c1:62:xx:xx:xx:xx";  //  Scott's billfold Tile Mac address
+std::string TILE_MAC_ADDRESS_1 = "f7:1f:xx:xx:xx:xx";  //  Scott's single house key Tile MAC address
+std::string TILE_MAC_ADDRESS_2 = "c3:4f:xx:xx:xx:xx";  //  Barb's house keys Tile MAC address
 
 
 //*****************************************************************************************

@@ -1,5 +1,5 @@
 /*  Eufy HomeBase
- *  Version 2.1
+ *  Version 2.2
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -14,6 +14,7 @@
  *  02/09/2022  scottmil  2.0   Added ability to configure ioBroker.euSec instance  See: https://github.com/bropat/ioBroker.eusec
  *  06/22/2022  scottmil  2.1   Updated when debug logging occurs
  *  12/02/2022  scottmil  2.1.1 Fixed minor parse() bug where debug msg "No JSON response received..." logged when debug off
+ *  04/06/2024  scottmil  2.2   Added optional labels for custom modes
  *
  *    states:
  *    "0": "Away",
@@ -55,6 +56,9 @@ metadata {
             input name: "devicePort", type:"text", title:"ioBroker Port", required: true, defaultValue: "8087"
             input name: "euSecInstance", type:"text", title:"ioBroker.euSec Instance", required: true, defaultValue: "eusec.0"
             input name: "deviceSerialNumber", type: "text", title: "Eufy Homebase Serial Number", required: true 
+            input name: "custom1Label", type: "text", title: "Custom1 Label", required: false
+            input name: "custom2Label", type: "text", title: "Custom2 Label", required: false
+            input name: "custom3Label", type: "text", title: "Custom3 Label", required: false
             input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
         }
     }
@@ -128,35 +132,47 @@ def parse(response) {
       if (logEnable)log.debug "Received '${json}'"
       switch (json.val) {
          case 0:
-    	      sendEvent(name: "mode", value: "away")
+    	      sendEvent(name: "mode", value: "Away")
               sendEvent(name: "switch", value: "on")
               break
     	 case 1:
-    	      sendEvent(name: "mode", value: "home")
+    	      sendEvent(name: "mode", value: "Home")
               sendEvent(name: "switch", value: "on")
               break
     	 case 2:
-    	      sendEvent(name: "mode", value: "scheduled")
+    	      sendEvent(name: "mode", value: "Scheduled")
               sendEvent(name: "switch", value: "on")
               break
     	 case 3:
-    	      sendEvent(name: "mode", value: "custom1")
+              if(custom1Label) {
+                  sendEvent(name: "mode", value: custom1Label)
+              } else {
+    	          sendEvent(name: "mode", value: "Custom1")
+              }
               sendEvent(name: "switch", value: "on")
               break
     	 case 4:
-    	      sendEvent(name: "mode", value: "custom2")
+              if(custom2Label) {
+                  sendEvent(name: "mode", value: custom2Label)
+              } else {
+    	          sendEvent(name: "mode", value: "Custom2")
+              }
               sendEvent(name: "switch", value: "on")
               break
          case 5:
-    	      sendEvent(name: "mode", value: "custom3")
+    	      if(custom3Label) {
+                  sendEvent(name: "mode", value: custom3Label)
+              } else {
+    	          sendEvent(name: "mode", value: "Custom3")
+              }
               sendEvent(name: "switch", value: "on")
               break
          case 47:
-    	      sendEvent(name: "mode", value: "geofencing")
+    	      sendEvent(name: "mode", value: "Geofencing")
               sendEvent(name: "switch", value: "on")
               break
          case 63:
-              sendEvent(name: "mode", value: "disarmed")
+              sendEvent(name: "mode", value: "Disarmed")
               sendEvent(name: "switch", value: "off")
               break
          default:
@@ -164,7 +180,7 @@ def parse(response) {
         }
         sendEvent(name: 'lastUpdate', value: lastUpdated(now()), unit: "")
    } else {
-       if (logEnable) log.debug "No JSON response received, refreshing..."
+       if (logEnable)log.debug "No JSON response received, refreshing..."
        //Arbitrary delay
        def count = 1
        while(count <= 50) {
